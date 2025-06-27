@@ -1,0 +1,62 @@
+#include<stdio.h>
+#include<pthread.h>
+#include<semaphore.h>
+#include<unistd.h>
+
+#define BUFFER_SIZE 5
+ int buffer[BUFFER_SIZE];
+ int in = 0,out = 0;
+ 
+ sem_t empty_slots, full_slots;
+ 
+  
+   void* producer(void* arg){
+       int item = 1;
+       while(1){
+            sem_wait(&empty_slots);
+            
+            
+            buffer[in] = item;
+            printf("produced item %d at index %d\n",item,in);
+            in =(in + 1)% BUFFER_SIZE;
+            item++;
+            
+            sem_post(&full_slots);
+            sleep(1);
+            
+       }
+       pthread_exit(NULL);
+       
+   }
+   void* consumer(void* arg){
+       while(1){
+           sem_wait(&full_slots);
+           
+           
+           int item = buffer[out];
+           printf("consumed item %d from index %d\n",item,out);
+           out = (out + 1)% BUFFER_SIZE;
+            
+            sem_post(&empty_slots);
+            sleep(2);
+            
+       }
+       pthread_exit(NULL);
+   }
+   int main(){
+       pthread_t producer_thread,consumer_thread;
+     
+     sem_init(&empty_slots,0,BUFFER_SIZE);
+     sem_init(&full_slots,0,0);
+       
+       pthread_create(&producer_thread,NULL,producer,NULL);
+        pthread_create(&consumer_thread,NULL,consumer,NULL);
+        
+        pthread_join(producer_thread,NULL);
+        pthread_join(consumer_thread,NULL);
+        
+        sem_destroy(&empty_slots);
+        sem_destroy(&full_slots);
+        return 0;
+   }
+       
